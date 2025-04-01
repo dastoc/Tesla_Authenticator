@@ -1,0 +1,66 @@
+# ======================================
+# Rust Build Artifacts
+# ======================================
+/target/
+**/*.rlib
+**/*.rmeta
+/Cargo.lock  # Optional: omit if you want exact versions tracked
+
+# ======================================
+# Docker Artifacts
+# ======================================
+/postgres_data/
+docker-compose.yml.bak
+
+# ======================================
+# Logs and Backups
+# ======================================
+*.log
+*.bak
+*.backup
+
+# ======================================
+# Environment and Sensitive Files
+# ======================================
+.env
+.env.local
+.env.*.local
+
+# ======================================
+# Editor & IDE Files
+# ======================================
+.vscode/
+.idea/
+*.iml
+
+# ======================================
+# OS-Generated Files
+# ======================================
+.DS_Store
+Thumbs.db
+
+# ======================================
+# Temporary Files
+# ======================================
+*.tmp
+*.swp
+*.swo
+*~
+
+# ======================================
+# Database Migrations (Optional)
+# ======================================
+# Uncomment if migrations should not be tracked
+# /migrations/
+
+# ======================================
+# Dependency Directories (Optional)
+# ======================================
+# Ignore vendored dependencies (if using `cargo vendor`)
+/vendor/
+
+# ======================================
+# Miscellaneous
+# ======================================
+*.md.bak
+*.md~
