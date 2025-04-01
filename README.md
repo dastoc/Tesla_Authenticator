@@ -1,6 +1,6 @@
 # Tesla Authenticator
 
-![Tesla Authenticator Logo](https://via.placeholder.com/150.png?text=Tesla+Authenticator)
+![Tesla Authenticator Logo](https://frontegg.com/wp-content/uploads/2023/03/Blog_Authenticator-apps_Inner.png)
 
 Tesla Authenticator is a secure, containerized authentication service for Tesla-related applications. Built using Rust, Actix Web, Diesel, and PostgreSQL, it enables secure user registration and login using JWT tokens. It also provides health checks, secure PostgreSQL authentication, and flexible environment configuration.
 
