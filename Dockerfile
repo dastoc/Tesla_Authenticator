@@ -1,13 +1,13 @@
 # -----------------
 # BUILD STAGE
 # -----------------
-FROM rust:latest AS builder
+FROM rust:1.83-slim-bookworm AS builder
 
 # Enable cargo-net fallback (if needed)
 ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 # Set working directory with correct path
-WORKDIR /app
+WORKDIR /build
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -35,9 +35,9 @@ RUN cargo build --release --locked \
 FROM debian:bookworm-slim AS runtime
 
 # Metadata labels
-LABEL maintainer="Daniel Stevens"
-LABEL version="0.1.0"
-LABEL description="Tesla Authenticator Service"
+LABEL maintainer="Daniel Stevens" \
+      version="0.1.0" \
+      description="Tesla Authenticator Service"
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -47,29 +47,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
-RUN useradd -m -r appuser -u 1001
+RUN useradd -m -u 1001 appuser
 
 # Use secure and minimal working dir
 WORKDIR /app
+
+# Copy binary
+COPY --from=builder \
+     /build/target/release/tesla_authenticator /app/tesla_authenticator
+    
+# Copy configuration file
+COPY .env /app/.env
+
+# Set proper permissions
+RUN chmod 700 /app && \
+    chown -R appuser:appuser /app && \
+    chmod +x /app/tesla_authenticator
+
+# Switch to non-root user
 USER appuser
 
-# COpy binary with ownership
-COPY --from=builder --chown=appuser:appuser \
-    /app/target/release/tesla_authenticator .
-
-# Copy configuration with ownership
-COPY --chown=appuser::appuser .env.example .env
-
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD curl -f http://localhost::8080/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Expose port
-EXPOSE 8080/tcp
-
-# Set runtime environment 
-ENV RUST_LOG=info \
-    PORT=8080
+EXPOSE 8080
 
 # Start the application
-CMD ["./tesla_authenticator"]
+CMD ["/app/tesla_authenticator"]
+# CMD echo "Starting app..." && /app/tesla_authenticator

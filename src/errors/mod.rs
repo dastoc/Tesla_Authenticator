@@ -4,6 +4,7 @@ use r2d2::Error as PoolError;
 use bcrypt::BcryptError;
 use jsonwebtoken::errors::Error as JwtError;
 use thiserror::Error;
+use validator::ValidationErrors;
 
 #[derive(Debug, Error)]
 pub enum AppConfigError {
@@ -15,6 +16,15 @@ pub enum AppConfigError {
 
     #[error("Invalid database URL: {0}")]
     InvalidDatabaseUrl(String),
+
+    #[error("Validation error: {0}")]
+    Validation(#[from] ValidationErrors),
+}
+
+impl From<std::env::VarError> for AppConfigError {
+    fn from(err: std::env::VarError) -> Self {
+        AppConfigError::MissingEnvVar(err.to_string())
+    }
 }
 
 #[derive(Debug, Error)]
@@ -37,35 +47,11 @@ pub enum AuthError {
     #[error("Config error: {0}")]
     ConfigError(#[from] AppConfigError),
 
-    // #[error("Validation error: {0}")]
-    // Validation(#[from] ValidationError),
+    #[error("Validation error: {0}")]
+    ValidationError(String),
 }
 
-impl From<std::env::VarError> for AppConfigError {
-    fn from(err: std::env::VarError) -> Self {
-        AppConfigError::MissingEnvVar(err.to_string())
-    }
-}
 
-// Custom error type for validation
-// #[derive(Debug)]
-// pub enum ValidationError {
-//     InvalidUsername(String),
-//     InvalidEmail(String),
-//     InvalidPasswordHash(String),
-// }
-
-// impl fmt::Display for ValidationError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         match self {
-//             ValidationError::InvalidUsername(msg) => write!(f, "Invalid username: {}", msg),
-//             ValidationError::InvalidEmail(msg) => write!(f, "Invalid email: {}", msg),
-//             ValidationError::InvalidPasswordHash(msg) => write!(f, "Invalid password hash: {}", msg),
-//         }
-//     }
-// }
-
-// impl Error for ValidationError {}
 
 // Return HTTP response for AuthError
 impl ResponseError for AuthError {
@@ -73,10 +59,10 @@ impl ResponseError for AuthError {
         match self {
             AuthError::InvalidCredentials => {
                 HttpResponse::Unauthorized().body(self.to_string())
-            }
-            // AuthError::Validation(_) => {
-            //     HttpResponse::BadRequest().body(self.to_string())
-            // }
+            },
+            AuthError::ConfigError(e) => {
+                HttpResponse::InternalServerError().json(e.to_string())
+            },
             _ => HttpResponse::InternalServerError().body(self.to_string()),
         }
     }

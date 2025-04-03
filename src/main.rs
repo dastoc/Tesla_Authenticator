@@ -13,6 +13,7 @@ mod services;
 
 use config::AppConfig;
 use db::create_db_pool;
+use middleware::JwtAuth;
 use services::auth::AuthService;
 
 #[actix_web::main]
@@ -44,18 +45,33 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
-    let auth_service = AuthService::new(pool, config.jwt_secret.clone());
+    let auth_service = AuthService::new(pool.clone(), config.jwt_secret.clone());
 
-    // Start HTTP server
     let server = HttpServer::new(move || {
+        // Create the JWT middleware instance
+        let jwt_middleware = JwtAuth::new(config.jwt_secret.clone());
+
         App::new()
             .app_data(web::Data::new(auth_service.clone()))
-            .wrap(actix_web::middleware::Logger::default()) // Can be replaced with a tracing middleware
-            .route("/login", web::post().to(handlers::login))
+            .wrap(tracing_actix_web::TracingLogger::default())
+            .route("/health", web::get().to(|| async { "✅ OK" }))
+            .service(
+                web::scope("/api")
+                    .service(
+                        web::resource("/login")
+                            .route(web::post().to(handlers::login)))
+                    // Apply JWT middleware only to protected routes
+                    .service(
+                        web::scope("/protected")
+                            .wrap(jwt_middleware)
+                            .route("", web::get().to(|| async { "🔐 Protected route" })),
+                    ),
+            )
     })
+    .workers(4)
     .bind(("0.0.0.0", config.server_port))
     .map_err(|e| {
-        error!("❌ Failed to bind to port {}: {}", config.server_port, e);
+        error!("❌ Could not bind to port {}: {}", config.server_port, e);
         std::io::Error::new(std::io::ErrorKind::AddrNotAvailable, e)
     })?;
 
@@ -77,7 +93,6 @@ async fn main() -> std::io::Result<()> {
 
 // SIGINT / SIGTERM listener
 async fn shutdown_signal() {
-    // Wait for Ctrl+C
     if let Err(e) = signal::ctrl_c().await {
         error!("Failed to listen for shutdown signal: {}", e);
     }

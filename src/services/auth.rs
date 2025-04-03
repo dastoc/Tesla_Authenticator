@@ -2,6 +2,7 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{encode, EncodingKey, Header};
 use bcrypt::verify;
 use diesel::prelude::*;
+use tracing::instrument;
 
 use crate::{
     db::{models::User, schema::users, DbPool},
@@ -21,7 +22,8 @@ impl AuthService {
         Self { pool, jwt_secret }
     }
 
-    pub fn authenticate(&self, username: &str, password: &str) -> Result<AuthResponse, AuthError> {
+    #[instrument(skip(self, password))]
+    pub async fn authenticate(&self, username: &str, password: &str) -> Result<AuthResponse, AuthError> {
         let mut conn = self
             .pool
             .get()

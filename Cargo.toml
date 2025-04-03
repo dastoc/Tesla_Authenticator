@@ -11,15 +11,15 @@ serde = { version = "1.0", features = ["derive"] }
 jsonwebtoken = "8"
 bcrypt = "0.13"
 dotenv = "0.15"
-env_logger = "0.9"
-log = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "1.0"
-regex = "1.11.1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.36", features = ["macros", "signal"] }
 url = "2.5.4"
+validator = { version = "0.20.0", features = ["derive"] }
+futures-util = "0.3.31"
+tracing-actix-web = "0.7.16"
 
 [dev-dependencies]
 diesel_migrations = "2.0"
