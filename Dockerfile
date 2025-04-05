@@ -13,19 +13,22 @@ WORKDIR /build
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Cache dependencies
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs \
+# Pre-build to cache dependencies
+RUN echo '[package]\nname = "dummy"\nversion = "0.1.0"\nedition = "2021"' > Cargo.toml \
+    && mkdir -p src \
+    && echo 'fn main() {}' > src/main.rs \
     && cargo build --release \
-    && rm -rf src
+    && rm -rf src Cargo.toml
 
 # Copy source code
 COPY src/ ./src/
 COPY migrations/ ./migrations/
 
 # Build with optimizations
+COPY Cargo.toml Cargo.lock ./
 RUN cargo build --release --locked \
     && strip target/release/tesla_authenticator
 
